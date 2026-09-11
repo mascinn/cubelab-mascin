@@ -27,7 +27,7 @@ export interface SessionStats {
 
 export interface ApiAlgorithm {
   id: string;
-  category: 'pll' | 'oll';
+  category: 'pll' | 'oll' | 'f2l';
   case_group: string;
   code: string;
   name: string;

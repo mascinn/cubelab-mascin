@@ -33,9 +33,15 @@
   let algorithms = $state<ApiAlgorithm[]>([]);
   let loading = $state(true);
   let searchQuery = $state('');
-  let selectedCategory = $state<'all' | 'pll' | 'oll' | 'mastered'>('all');
+  let selectedCategory = $state<'all' | 'f2l' | 'pll' | 'oll' | 'mastered'>('all');
   let selectedCaseGroup = $state<string>('all');
   let copiedId = $state<string | null>(null);
+
+  function getBadgeClass(cat: string): string {
+    if (cat === 'f2l') return 'badge-f2l';
+    if (cat === 'pll') return 'badge-pll';
+    return 'badge-oll';
+  }
 
   // Mastery tracking (persisted in localStorage)
   let masteredIds = $state<string[]>([]);
@@ -157,6 +163,8 @@
   }
 
   // Mastery stats calculation
+  const totalF2l = $derived(algorithms.filter((a) => a.category === 'f2l').length);
+  const masteredF2l = $derived(algorithms.filter((a) => a.category === 'f2l' && masteredIds.includes(a.id)).length);
   const totalPll = $derived(algorithms.filter((a) => a.category === 'pll').length);
   const masteredPll = $derived(algorithms.filter((a) => a.category === 'pll' && masteredIds.includes(a.id)).length);
   const totalOll = $derived(algorithms.filter((a) => a.category === 'oll').length);
@@ -165,7 +173,7 @@
   // Extract unique case groups for secondary filter
   const caseGroups = $derived.by(() => {
     let list = algorithms;
-    if (selectedCategory === 'pll' || selectedCategory === 'oll') {
+    if (selectedCategory === 'f2l' || selectedCategory === 'pll' || selectedCategory === 'oll') {
       list = algorithms.filter((a) => a.category === selectedCategory);
     } else if (selectedCategory === 'mastered') {
       list = algorithms.filter((a) => masteredIds.includes(a.id));
@@ -180,7 +188,7 @@
   // Filtered algorithms list
   const filteredAlgorithms = $derived.by(() => {
     return algorithms.filter((a) => {
-      if (selectedCategory === 'pll' || selectedCategory === 'oll') {
+      if (selectedCategory === 'f2l' || selectedCategory === 'pll' || selectedCategory === 'oll') {
         if (a.category !== selectedCategory) return false;
       } else if (selectedCategory === 'mastered') {
         if (!masteredIds.includes(a.id)) return false;
@@ -416,7 +424,7 @@
           </span>
         </div>
         <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-          Standard 21 PLL & 57 OLL cases with multi-formula alternatives, custom notes, and 3D playback.
+          Standard 41 F2L, 57 OLL & 21 PLL cases with multi-formula alternatives, custom notes, and 3D playback.
         </p>
       </div>
     </div>
@@ -444,25 +452,25 @@
 
   <!-- Mastery Progress Tracker -->
   <div class="py-3 sm:py-4 border-b border-zinc-200/80 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-    <div class="flex items-center gap-4 sm:gap-6 w-full sm:w-auto">
-      <!-- PLL Progress -->
-      <div class="flex flex-col gap-1 min-w-[130px] flex-1 sm:flex-initial">
+    <div class="flex items-center gap-3 sm:gap-5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+      <!-- F2L Progress -->
+      <div class="flex flex-col gap-1 min-w-[110px] flex-1 sm:flex-initial">
         <div class="flex items-center justify-between text-xs font-medium">
-          <span class="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> PLL
+          <span class="text-blue-700 dark:text-blue-400 font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span> F2L
           </span>
-          <span class="font-mono text-[11px] text-zinc-500">{masteredPll}/{totalPll || 21}</span>
+          <span class="font-mono text-[11px] text-zinc-500">{masteredF2l}/{totalF2l || 41}</span>
         </div>
         <div class="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
           <div
-            class="h-full bg-emerald-500 transition-all duration-300"
-            style="width: {totalPll ? (masteredPll / totalPll) * 100 : 0}%"
+            class="h-full bg-blue-500 transition-all duration-300"
+            style="width: {totalF2l ? (masteredF2l / totalF2l) * 100 : 0}%"
           ></div>
         </div>
       </div>
 
       <!-- OLL Progress -->
-      <div class="flex flex-col gap-1 min-w-[130px] flex-1 sm:flex-initial">
+      <div class="flex flex-col gap-1 min-w-[110px] flex-1 sm:flex-initial">
         <div class="flex items-center justify-between text-xs font-medium">
           <span class="text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-amber-500"></span> OLL
@@ -473,6 +481,22 @@
           <div
             class="h-full bg-amber-500 transition-all duration-300"
             style="width: {totalOll ? (masteredOll / totalOll) * 100 : 0}%"
+          ></div>
+        </div>
+      </div>
+
+      <!-- PLL Progress -->
+      <div class="flex flex-col gap-1 min-w-[110px] flex-1 sm:flex-initial">
+        <div class="flex items-center justify-between text-xs font-medium">
+          <span class="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> PLL
+          </span>
+          <span class="font-mono text-[11px] text-zinc-500">{masteredPll}/{totalPll || 21}</span>
+        </div>
+        <div class="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+          <div
+            class="h-full bg-emerald-500 transition-all duration-300"
+            style="width: {totalPll ? (masteredPll / totalPll) * 100 : 0}%"
           ></div>
         </div>
       </div>
@@ -495,10 +519,10 @@
       </button>
 
       <button
-        onclick={() => { selectedCategory = 'pll'; selectedCaseGroup = 'all'; }}
-        class="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 {selectedCategory === 'pll' ? 'bg-emerald-600 text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-emerald-600'}"
+        onclick={() => { selectedCategory = 'f2l'; selectedCaseGroup = 'all'; }}
+        class="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 {selectedCategory === 'f2l' ? 'bg-blue-600 text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-blue-600'}"
       >
-        PLL ({algorithms.filter(a => a.category === 'pll').length})
+        F2L ({algorithms.filter(a => a.category === 'f2l').length})
       </button>
 
       <button
@@ -506,6 +530,13 @@
         class="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 {selectedCategory === 'oll' ? 'bg-amber-600 text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-amber-600'}"
       >
         OLL ({algorithms.filter(a => a.category === 'oll').length})
+      </button>
+
+      <button
+        onclick={() => { selectedCategory = 'pll'; selectedCaseGroup = 'all'; }}
+        class="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 {selectedCategory === 'pll' ? 'bg-emerald-600 text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-emerald-600'}"
+      >
+        PLL ({algorithms.filter(a => a.category === 'pll').length})
       </button>
 
       <button
@@ -573,7 +604,7 @@
         >
           <!-- Card Header: Code Badge & Star Toggle -->
           <div class="w-full flex items-center justify-between gap-1 mb-1">
-            <span class="px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-mono font-bold {alg.category === 'pll' ? 'badge-pll' : 'badge-oll'} truncate">
+            <span class="px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-mono font-bold {getBadgeClass(alg.category)} truncate">
               {alg.code}
             </span>
 
@@ -639,7 +670,7 @@
 
           <div>
             <div class="flex items-center gap-1.5">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider {activeAlg.category === 'pll' ? 'badge-pll' : 'badge-oll'}">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider {getBadgeClass(activeAlg.category)}">
                 {activeAlg.category.toUpperCase()}
               </span>
               <span class="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300">{activeAlg.code}</span>
